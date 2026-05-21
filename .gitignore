@@ -1,0 +1,5 @@
+# Ignorar base de datos local y caché
+data/
+__pycache__/
+.ipynb_checkpoints/
+*.pyc
