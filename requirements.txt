@@ -1,6 +1,10 @@
-wfdb==4.1.2
 numpy
+pandas==2.2.3
 scipy
 scikit-learn
 matplotlib
+seaborn
+wfdb==4.1.2
 jupyter
+nbconvert
+ipykernel

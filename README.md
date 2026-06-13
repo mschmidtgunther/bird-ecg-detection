@@ -15,3 +15,98 @@ El algoritmo está diseñado de manera modular siguiendo las siguientes etapas s
 * `data/`: Almacenamiento local de la base de datos (protegido por `.gitignore`).
 * `notebooks/`: Cuadernos de Jupyter para experimentación y gráficos rápidos.
 * `src/`: Scripts modulares en Python con el núcleo algorítmico del pipeline.
+
+## Ejecución del Notebook
+
+### Requisitos
+
+* macOS o Linux con Python 3.12.
+* Dataset PTB-XL descargado localmente.
+* Entorno virtual Python (`.venv`) dentro del repositorio.
+
+El notebook principal es:
+
+```bash
+notebooks/pipeline_sin_ml.ipynb
+```
+
+### Dataset
+
+El notebook espera la carpeta raíz del dataset PTB-XL, es decir, la carpeta que contiene:
+
+```text
+ptbxl_database.csv
+records100/
+records500/
+RECORDS
+```
+
+En la máquina local usada para este proyecto, el dataset está en:
+
+```bash
+/Users/agustinaperini/Desktop/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.3
+```
+
+Si el dataset está en otra ubicación, se puede indicar con la variable de entorno `PTBXL_DATA_DIR` antes de ejecutar el notebook.
+
+### Crear el Entorno
+
+Desde la raíz del repositorio:
+
+```bash
+cd /Users/agustinaperini/Documents/GitHub/bird-ecg-detection
+/opt/homebrew/bin/python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+Registrar el kernel de Jupyter:
+
+```bash
+python -m ipykernel install --user --name bird-ecg-detection --display-name "Python (.venv bird-ecg)"
+```
+
+### Ejecutar el Notebook Completo por Terminal
+
+Con el entorno activado:
+
+```bash
+source .venv/bin/activate
+PTBXL_DATA_DIR="/Users/agustinaperini/Desktop/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.3" \
+python -m jupyter nbconvert \
+  --to notebook \
+  --execute notebooks/pipeline_sin_ml.ipynb \
+  --inplace \
+  --ExecutePreprocessor.kernel_name=bird-ecg-detection \
+  --ExecutePreprocessor.timeout=-1
+```
+
+El comando ejecuta todas las celdas y guarda las salidas dentro del mismo archivo `.ipynb`.
+
+### Ejecutar Segmentos Puntuales
+
+Para inspeccionar una celda o segmento específico, abrir Jupyter Lab:
+
+```bash
+source .venv/bin/activate
+PTBXL_DATA_DIR="/Users/agustinaperini/Desktop/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.3" \
+python -m jupyter lab notebooks/pipeline_sin_ml.ipynb
+```
+
+Seleccionar el kernel `Python (.venv bird-ecg)`. Para ejecutar una celda puntual, correr primero las celdas anteriores necesarias con `Run > Run All Above Selected Cell` y luego ejecutar la celda seleccionada con `Shift + Enter`.
+
+### Dependencias Principales
+
+Las dependencias están declaradas en `requirements.txt`. Las más relevantes son:
+
+* `wfdb==4.1.2`: lectura de señales ECG PTB-XL.
+* `pandas==2.2.3`: carga y manipulación de metadatos.
+* `numpy`, `scipy`: procesamiento numérico y filtrado de señales.
+* `matplotlib`, `seaborn`: gráficos y matrices de confusión.
+* `scikit-learn`: partición train/test, árbol de decisión y métricas.
+* `jupyter`, `nbconvert`, `ipykernel`: ejecución interactiva y por terminal.
+
+### Resultado Esperado
+
+El notebook no escribe archivos `.csv`, modelos ni figuras externas. Genera y guarda las salidas dentro de `notebooks/pipeline_sin_ml.ipynb`: gráficos de señales, detección de QRS, extracción de features, matrices de confusión, reportes de clasificación y el clasificador final basado en reglas `if/else`.
