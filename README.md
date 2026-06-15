@@ -1,112 +1,135 @@
-# Detección automática de Bloqueo Incompleto de Rama Derecha (BIRD)
+# CardioExpert V6 — Sistema Experto para Clasificación de Bloqueos de Rama en ECG
 
-## 📌 Descripción del Proyecto
-[cite_start]Este proyecto implementa un sistema automatizado de procesamiento y análisis de señales electrocardiográficas (ECG) de 12 derivaciones para la identificación de patrones morfológicos compatibles con el Bloqueo Incompleto de Rama Derecha (BIRD)[cite: 10]. [cite_start]A diferencia de otras patologías que alteran el ritmo, el BIRD se manifiesta principalmente a través de cambios sutiles en la morfología del complejo QRS[cite: 5].
+Sistema experto determinista (sin machine learning) para clasificar automáticamente bloqueos de rama a partir de señales ECG, desarrollado sobre el dataset público PTB-XL. El clasificador aplica reglas morfológicas derivadas del análisis de cuartiles del dataset para asignar uno de cinco diagnósticos: bloqueo completo de rama izquierda (CLBBB), bloqueo completo de rama derecha (CRBBB), bloqueo incompleto de rama izquierda (ILBBB), bloqueo incompleto de rama derecha (IRBBB), o registro normal (NORM).
 
-## 🚀 Pipeline de Procesamiento
-El algoritmo está diseñado de manera modular siguiendo las siguientes etapas secuenciales:
-1. **Carga de Datos:** Lectura y caracterización de señales multicanal provenientes de la base de datos PTB-XL (500 Hz).
-2. **Preprocesamiento:** Filtrado digital mediante un filtro Pasa-Altos (0.5 Hz) para deriva de línea de base, un filtro Notch (50 Hz) para interferencia eléctrica, y un filtro Pasa-Bajos (35-45 Hz) para ruido muscular.
-3. **Detección y Segmentación:** Localización de los complejos QRS mediante el Algoritmo de Pan-Tompkins y aislamiento de latidos individuales.
-4. **Extracción de Características:** Cuantificación de la duración del QRS (criterio BIRD: entre 100ms y 120ms), detección de morfología rSR' (orejas de conejo) en derivaciones V1 y V2, y análisis de la onda S en las derivaciones laterales (I y V6).
-5. **Clasificación:** Comparación de un sistema heurístico basado en reglas médicas frente a modelos de aprendizaje automático (Random Forest / SVM).
+---
 
-## 📂 Estructura del Repositorio
-* `data/`: Almacenamiento local de la base de datos (protegido por `.gitignore`).
-* `notebooks/`: Cuadernos de Jupyter para experimentación y gráficos rápidos.
-* `src/`: Scripts modulares en Python con el núcleo algorítmico del pipeline.
+## Descripción del proyecto
 
-## Ejecución del Notebook
+El pipeline procesa señales ECG crudas del dataset PTB-XL y extrae 9 descriptores morfológicos del complejo QRS sobre las derivaciones V1, V6 y DI. Estos descriptores alimentan un sistema de reglas if/else (Sistema Experto v6) que produce un diagnóstico clínico por registro. El proyecto incluye una interfaz gráfica en PyQt5 con tres modos de uso: análisis individual, procesamiento por lote y validación del algoritmo con métricas de scikit-learn.
 
-### Requisitos
+### Descriptores extraídos
 
-* macOS o Linux con Python 3.12.
-* Dataset PTB-XL descargado localmente.
-* Entorno virtual Python (`.venv`) dentro del repositorio.
+El pipeline calcula los siguientes 9 descriptores morfológicos por registro:
 
-El notebook principal es:
+| Feature | Derivación | Descripción |
+|---|---|---|
+| `area_qrs_v1` | V1 | Área absoluta del complejo QRS (energía) |
+| `ancho_qrs_lead_I` | DI | Duración del QRS usando umbral del 10 % de amplitud máxima |
+| `polaridad_net_v1` | V1 | Integral con signo del QRS (positivo = R dominante, negativo = S/QS dominante) |
+| `n_picos_pos_v1` | V1 | Número promedio de picos positivos por latido (patrón rSR') |
+| `sep_r_rprime_v1` | V1 | Gap temporal entre R y R' (diferencia CRBBB vs IRBBB) |
+| `ratio_rs_v1` | V1 | Cociente amplitud R / amplitud S |
+| `s_wave_depth_v6` | V6 | Profundidad de onda S (marcador de bloqueo derecho) |
+| `ratio_rs_v6` | V6 | Cociente amplitud R / amplitud S en V6 |
+| `r_amp_lead_I` | DI | Amplitud máxima de onda R (baja en CRBBB, alta en LBBB) |
 
-```bash
-notebooks/pipeline_sin_ml.ipynb
+---
+
+## Dataset
+
+El proyecto utiliza **PTB-XL**, una base de datos pública de ECG de 12 derivaciones:
+
+> Los datos **no se incluyen en el repositorio**. Descargalos desde [PhysioNet — PTB-XL](https://physionet.org/content/ptb-xl/) y colocalos según la estructura indicada en la sección siguiente.
+
+---
+
+## Estructura de carpetas
+
+```
+project-root/
+│
+├── data/
+│   └── raw/                          ← Raíz del dataset PTB-XL
+│       └── ptbxl_database        ← Metadatos del dataset (obligatorio)
+│           ├── records100/               ← Señales a 100 Hz (formato WFDB .dat/.hea)
+│           └── records500/               ← Señales a 500 Hz (formato WFDB .dat/.hea)
+│
+├── src/
+│   ├── data_loader.py                ← Carga de metadatos, construcción del dataset y filtrado Butterworth
+│   ├── features.py                   ← Detección de latidos y extracción de los 9 descriptores QRS
+│   └── clasificador.py               ← Sistema experto de reglas morfológicas (v6) y evaluación
+│
+├── notebooks/                        ← Experimentación en Jupyter (exploración y desarrollo)
+│
+├── gui.py                            ← Interfaz gráfica PyQt5 (punto de entrada visual)
+├── main.py                           ← Pipeline por consola (punto de entrada sin GUI)
+└── requirements.txt
 ```
 
-### Dataset
+> **Importante:** La carpeta `data/` no se versiona. Asegurate de crearla manualmente y colocar el dataset antes de ejecutar.
 
-El notebook espera la carpeta raíz del dataset PTB-XL, es decir, la carpeta que contiene:
+---
 
-```text
+## Instalación
+
+Requiere Python 3.10 o superior.
+
+```bash
+pip install -r requirements.txt
+```
+
+Las dependencias principales son `wfdb`, `scipy`, `numpy`, `pandas`, `scikit-learn`, `matplotlib` y `PyQt5`.
+
+---
+
+## Uso
+
+### Interfaz gráfica (recomendado)
+
+```bash
+python gui.py
+```
+
+La interfaz tiene tres pestañas:
+
+**Registro individual** — Cargá un archivo `.hea` o `.dat` de PTB-XL. El sistema filtra la señal, detecta latidos, extrae los descriptores y muestra el diagnóstico junto con las trazas de V1, V6 y DI para los primeros 3 segundos.
+
+**Análisis por lote** — Seleccioná la carpeta raíz del dataset (`data/raw`). El sistema procesa 30 registros por clase, clasifica cada uno y muestra la distribución de diagnósticos en un gráfico de barras.
+
+**Evaluar algoritmo** — Seleccioná la carpeta raíz del dataset (`data/raw`). El sistema procesa 80 registros por clase, compara las predicciones con las etiquetas reales de PTB-XL y muestra la matriz de confusión y el reporte de precisión/recall/F1 por clase.
+
+### Pipeline por consola
+
+```bash
+python main.py
+```
+
+Ejecuta el pipeline completo: carga 100 registros por clase, filtra las señales, extrae features, clasifica e imprime el reporte de métricas en consola. Editá la variable `PATH_DATA` en `main.py` si tu dataset está en una ruta distinta a `data/raw`.
+
+---
+
+## Pipeline técnico
+
+```
 ptbxl_database.csv
-records100/
-records500/
-RECORDS
+      │
+      ▼
+construir_dataset()       Selección aleatoria estratificada por clase (seed reproducible)
+      │
+      ▼
+filtrar_dataset()         Filtro Butterworth pasabanda (0.5–40 Hz, orden 4, fase cero)
+      │
+      ▼
+extraer_todas_las_features()
+   ├── detectar_latidos_v1()     find_peaks sobre señal V1 invertida
+   └── 9 × calcular_*()         Cálculo de descriptores morfológicos por latido
+      │
+      ▼
+clasificar_dataset()      Sistema experto v6: reglas if/else sobre los 9 descriptores
+      │
+      ▼
+evaluar()                 Reporte sklearn + matriz de confusión
 ```
 
-En la máquina local usada para este proyecto, el dataset está en:
+---
 
-```bash
-/Users/agustinaperini/Desktop/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.3
-```
+## Módulos
 
-Si el dataset está en otra ubicación, se puede indicar con la variable de entorno `PTBXL_DATA_DIR` antes de ejecutar el notebook.
+**`src/data_loader.py`** — Lee `ptbxl_database.csv`, parsea los códigos SCP, selecciona registros por clase mediante muestreo aleatorio estratificado y aplica el filtro Butterworth a las derivaciones V1, V6 y DI de cada registro.
 
-### Crear el Entorno
+**`src/features.py`** — Detecta los complejos QRS en V1 usando `scipy.signal.find_peaks` sobre la señal invertida y calcula los 9 descriptores morfológicos. Cada función puede generar una gráfica diagnóstica con `plot=True`.
 
-Desde la raíz del repositorio:
+**`src/clasificador.py`** — Implementa `clasificador_reglas_v6()`, que evalúa los 9 descriptores en orden de expresión morfológica: CLBBB primero (área y polaridad más extremas), luego ILBBB, IRBBB, CRBBB y NORM por defecto. Los umbrales fueron derivados del análisis de cuartiles del dataset PTB-XL.
 
-```bash
-cd /Users/agustinaperini/Documents/GitHub/bird-ecg-detection
-/opt/homebrew/bin/python3.12 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-```
-
-Registrar el kernel de Jupyter:
-
-```bash
-python -m ipykernel install --user --name bird-ecg-detection --display-name "Python (.venv bird-ecg)"
-```
-
-### Ejecutar el Notebook Completo por Terminal
-
-Con el entorno activado:
-
-```bash
-source .venv/bin/activate
-PTBXL_DATA_DIR="/Users/agustinaperini/Desktop/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.3" \
-python -m jupyter nbconvert \
-  --to notebook \
-  --execute notebooks/pipeline_sin_ml.ipynb \
-  --inplace \
-  --ExecutePreprocessor.kernel_name=bird-ecg-detection \
-  --ExecutePreprocessor.timeout=-1
-```
-
-El comando ejecuta todas las celdas y guarda las salidas dentro del mismo archivo `.ipynb`.
-
-### Ejecutar Segmentos Puntuales
-
-Para inspeccionar una celda o segmento específico, abrir Jupyter Lab:
-
-```bash
-source .venv/bin/activate
-PTBXL_DATA_DIR="/Users/agustinaperini/Desktop/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.3" \
-python -m jupyter lab notebooks/pipeline_sin_ml.ipynb
-```
-
-Seleccionar el kernel `Python (.venv bird-ecg)`. Para ejecutar una celda puntual, correr primero las celdas anteriores necesarias con `Run > Run All Above Selected Cell` y luego ejecutar la celda seleccionada con `Shift + Enter`.
-
-### Dependencias Principales
-
-Las dependencias están declaradas en `requirements.txt`. Las más relevantes son:
-
-* `wfdb==4.1.2`: lectura de señales ECG PTB-XL.
-* `pandas==2.2.3`: carga y manipulación de metadatos.
-* `numpy`, `scipy`: procesamiento numérico y filtrado de señales.
-* `matplotlib`, `seaborn`: gráficos y matrices de confusión.
-* `scikit-learn`: partición train/test, árbol de decisión y métricas.
-* `jupyter`, `nbconvert`, `ipykernel`: ejecución interactiva y por terminal.
-
-### Resultado Esperado
-
-El notebook no escribe archivos `.csv`, modelos ni figuras externas. Genera y guarda las salidas dentro de `notebooks/pipeline_sin_ml.ipynb`: gráficos de señales, detección de QRS, extracción de features, matrices de confusión, reportes de clasificación y el clasificador final basado en reglas `if/else`.
+**`gui.py`** — Interfaz PyQt5 con tres pestañas que integra los tres módulos anteriores. Los gráficos se renderizan con `matplotlib` embebido en Qt.

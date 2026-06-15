@@ -6,3 +6,20 @@ ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.3/
 __pycache__/
 .ipynb_checkpoints/
 *.pyc
+
+# Ignorar contenido de data
+data/**
+
+*.jpg
+*.jpeg
+*.png
+
+# Ignorar archivos temporales de Python y Jupyter
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Pero mantener los .gitkeep
+!data/
+!data/raw/
+!data/raw/.gitkeep
