@@ -445,9 +445,15 @@ class VentanaPrincipalECG(QMainWindow):
                 )
             filas += f"<tr><td><b>accuracy</b></td><td colspan='3'>{reporte['accuracy']:.2f}</td><td>{len(y_true)}</td></tr>"
             self.txt_reporte.setHtml(f"""
-                <table border="1" cellspacing="0" cellpadding="6" style="width:100%; border-collapse:collapse; font-family:Arial; font-size:12pt; color:#111827;">
+                <h3 style="color:#2C3E50; text-align:center; font-family: sans-serif; margin-bottom: 10px;">Reporte de Clasificación</h3>
+                
+                <table width="100%" cellpadding="7" style="border-collapse: collapse; text-align:center; font-family: sans-serif; font-size: 13px;">
                     <tr style="background-color:#F3F4F6;">
-                        <th>Clase</th><th>Precision</th><th>Recall</th><th>F1-score</th><th>Support</th>
+                        <th width="15%">Clase</th>
+                        <th width="25%">Precision</th>
+                        <th width="20%">Recall</th>
+                        <th width="20%">F1-score</th>
+                        <th width="20%">Support</th>
                     </tr>
                     {filas}
                 </table>
