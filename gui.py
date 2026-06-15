@@ -302,6 +302,14 @@ class VentanaPrincipalECG(QMainWindow):
         self.lbl_estado_lote = QLabel("Estado: Esperando asignación de lote.")
         self.lbl_estado_lote.setWordWrap(True)
         panel_izq.addWidget(self.lbl_estado_lote)
+
+        panel_izq.addWidget(QLabel("<b>Resumen morfológico por clase</b>"))
+        self.tabla_resumen_lote = QTableWidget(0, 4)
+        self.tabla_resumen_lote.setHorizontalHeaderLabels(["Clase", "Área QRS V1 \n(mV·s)", "Polaridad V1 \n(mV·s)", "Ancho QRS DI \n(s)"])
+        self.tabla_resumen_lote.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.tabla_resumen_lote.verticalHeader().setVisible(False)
+        self.tabla_resumen_lote.setStyleSheet("background-color: white; color: #111827;")
+        panel_izq.addWidget(self.tabla_resumen_lote)
         
         panel_izq.addStretch()
         layout.addLayout(panel_izq, stretch=2)
@@ -319,6 +327,7 @@ class VentanaPrincipalECG(QMainWindow):
 
         path_data = Path(dir_path)
         self.lbl_estado_lote.setText("Procesando lote en segundo plano... Por favor espere.")
+        self.tabla_resumen_lote.setRowCount(0)
         QApplication.processEvents() # Actualiza la UI de inmediato
 
         try:
@@ -328,6 +337,23 @@ class VentanaPrincipalECG(QMainWindow):
             
             df_features = src.features.extraer_todas_las_features(dataset)
             df_clasificado = src.clasificador.clasificar_dataset(df_features)
+
+            features_resumen = [
+                "area_qrs_v1",
+                "polaridad_net_v1",
+                "ancho_qrs_lead_I",
+            ]
+            resumen = df_clasificado.groupby("prediccion")
+            self.tabla_resumen_lote.setRowCount(len(resumen))
+            for fila, (clase, grupo) in enumerate(resumen):
+                self.tabla_resumen_lote.setItem(fila, 0, QTableWidgetItem(str(clase)))
+                for columna, feature in enumerate(features_resumen, start=1):
+                    if feature not in grupo.columns:
+                        texto = "—"
+                    else:
+                        valores = pd.to_numeric(grupo[feature], errors="coerce").dropna()
+                        texto = "—" if valores.empty else f"{valores.mean():.3f}"
+                    self.tabla_resumen_lote.setItem(fila, columna, QTableWidgetItem(texto))
 
             # Contar la distribución de diagnósticos arrojados por el Sistema Experto
             conteo = df_clasificado['prediccion'].value_counts()
